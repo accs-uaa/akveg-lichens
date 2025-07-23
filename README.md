@@ -1,28 +1,27 @@
-# Macrolichens of the Alaskan Mainland
+# Macrolichens of the Alaska Mainland
 
 ![Screenshot from the Macrolichens of the Alaskan Mainland website](assets/website_screenshot.png)
 
 ## About the Project 🪸
 
 This project provides a set of Python scripts to convert the raw text and image files from the *Macrolichen 
-Companion of the Alaskan Mainland* into a structured format suitable for a [Hugo](https://gohugo.io/) static site generator.
+Companion of the Alaska Mainland* into a structured format suitable for a [Hugo](https://gohugo.io/) static site generator.
 
-The primary 
-goal is to transform the original field guide content into an accessible and easily maintainable online resource,
- tapping into Hugo's capabilities for generating fast, modern, and navigable websites. This 
+The goal is to transform the original field guide content into an accessible and easily maintainable online resource. This 
 digital format enhances the guide's usability by allowing for dynamic search, easier updates, and broader 
 accessibility for scientists and enthusiasts alike.
 
 The scripts automate the website building process by batch processing species descriptions (Word documents) 
-and associated photographs (image files) to generate corresponding Markdown and HTML files. These output files 
-integrate seamlessly with a Hugo project, enabling swift deployment of and updates to a digital version of the Alaska Macrolichens Guide. 
+and associated photographs (image files) to generate Hugo-compatible Markdown files. These output files 
+integrate seamlessly into a Hugo website, enabling rapid deployment of and updates to the digital version of the 
+*Macrolichen Companion of the Alaska Mainland*. 
 
 ### Built With 🛠️
 
 * **Python 3.13+** 
 * **Miniforge** (with conda and conda-forge channel) - For package management.
 * **[Polars](https://pola.rs/)** - For data manipulation. 
-* **[python-docx](https://python-docx.readthedocs.io/)** - For working with .docx (Microsoft Word) files. 
+* **[python-docx](https://python-docx.readthedocs.io/)** - For working with .docx files. 
 * **[Pathlib](https://docs.python.org/3/library/pathlib.html)** - For object-oriented filesystem paths.
 * **[textwrap](https://docs.python.org/3/library/textwrap.html)** - For dedenting strings. 
 * **[re](https://docs.python.org/3/library/re.html)** - For string pattern matching using regular expressions. 
@@ -47,7 +46,7 @@ Before you begin, ensure you have the following installed:
 1.  **Clone the repository**:
     Open your terminal or command prompt and clone the project repository to your local machine using Git:
     ```bash
-    git clone [https://github.com/accs-uaa/akveg-lichens.git](https://github.com/accs-uaa/akveg-lichens.git)
+    git clone https://github.com/accs-uaa/akveg-lichens.git
     ```
 
 2.  **Navigate to the project directory**:
@@ -66,14 +65,12 @@ Before you begin, ensure you have the following installed:
     ```
     
 4.  **Install dependencies**:
-    Once your Conda environment is active, install the required Python libraries. All libraries can be installed 
-    from the `conda-forge` channel.
+    Once your Conda environment is active, install the required Python libraries from the `conda-forge` channel.
     ```bash
     conda env create -f environment.yml
     ```
     This command will install all libraries listed in the `environment.yml` file, which are necessary for the 
-    scripts to run 
-    correctly.
+    scripts to run correctly.
 
 ## Usage ▶️
 
@@ -90,8 +87,8 @@ one sub-folder per taxon that contains both the images and .docx files for that 
 
 ![Recommended folder structure](assets/folder_structure.png)
 
-The .docx files in this project did not use any headings. Sections were identified at the start of each paragraph 
-using the section name followed by a colon and a white space (e.g., Description: ). All files followed this same 
+The .docx files in this project did not use any headings. Instead, sections were identified at the start of each 
+paragraph using the section name followed by a colon and a white space (e.g., Description: ). All files followed this same 
 template.
 
 2. **Run the processing scripts**
@@ -136,8 +133,7 @@ hugo
 
 ### License ⚖️
 This project is provided under the [GNU General Public License v3.0](https://www.gnu.org/licenses/gpl-3.0.html). It 
-is free to use and modify in part or in 
-whole.
+is free to use and modify in part or in whole.
 
 ### Contact 📧
 * **Project Maintainer**: Amanda Droghini 
