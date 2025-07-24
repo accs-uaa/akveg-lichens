@@ -35,6 +35,10 @@ def has_images(folder_path: Path) -> bool:
             return True
     return False
 
+# Define minimum and output image dimensions
+minimum_size = 1800
+output_size = (1800, 1800)
+
 # Create empty list for storing image file paths
 img_list = []
 
@@ -112,5 +116,8 @@ img_files = img_files.with_columns(
 for new_path in img_files['output_path']:
     src_path = Path(img_files.filter(pl.col('output_path') == new_path)['input_path'].item())
     with Image.open(src_path) as im:
-        im.thumbnail((1800, 1800))
-        im.save(new_path)
+        if (im.width < minimum_size) and (im.height < minimum_size):
+            print(f"{src_path} was not resized; dimension too small.")
+        else:
+            im.thumbnail(output_size)
+            im.save(new_path)
