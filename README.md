@@ -21,11 +21,11 @@ integrate seamlessly into a Hugo website, enabling rapid deployment of and updat
 * **Python 3.13+** 
 * **Miniforge** (with conda and conda-forge channel) - For package management.
 * **[Polars](https://pola.rs/)** - For data manipulation. 
+* **[Pillow](https://pillow.readthedocs.io/en/stable/index.html)** - For image manipulation.
 * **[python-docx](https://python-docx.readthedocs.io/)** - For working with .docx files. 
 * **[Pathlib](https://docs.python.org/3/library/pathlib.html)** - For object-oriented filesystem paths.
 * **[textwrap](https://docs.python.org/3/library/textwrap.html)** - For dedenting strings. 
-* **[re](https://docs.python.org/3/library/re.html)** - For string pattern matching using regular expressions. 
-* **[shutil](https://docs.python.org/3/library/shutil.html)** - For high-level file operations e.g., copying files.
+* **[re](https://docs.python.org/3/library/re.html)** - For string pattern matching using regular expressions.
 
 ## Getting Started 🚀
 Follow these simple steps to run these scripts on your local machine.
@@ -37,7 +37,7 @@ Before you begin, ensure you have the following installed:
 * **Miniforge**: Optional, but recommended. Miniforge is an open-source, minimalist package manager that 
   provides `conda` and defaults to the `conda-forge` channel.
     * You can download the appropriate installer for your system from the [Miniforge GitHub releases page](https://github.com/conda-forge/miniforge/releases).
-    * Jan Kirenz has a short and sweet [Miniforge setup tutorial](https://kirenz.github.io/codelabs/codelabs/miniforge-setup/) to help you get started.
+    * Jan Kirenz has a short and sweet [Miniforge setup tutorial](https://kirenz.github.io/codelabs/codelabs/miniforge-setup/#0) to help you get started.
 * **Hugo website**. The scripts are formatted to be used with the Hugo documentation theme [as simple as plain 
   book](https://github.com/alex-shpak/hugo-book).
 
@@ -87,9 +87,12 @@ one sub-folder per taxon that contains both the images and .docx files for that 
 
 ![Recommended folder structure](assets/folder_structure.png)
 
-The .docx files in this project did not use any headings. Instead, sections were identified at the start of each 
-paragraph using the section name followed by a colon and a white space (e.g., Description: ). All files followed this same 
-template.
+The .docx files in this project followed a specific template. Instead of using headings, sections were 
+identified at the start of each 
+paragraph using the section name followed by a colon and a white space (e.g., Description: ). An example for 
+*Cladonia stellaris* is shown below.
+
+![Example of .docx formatting](assets/docx_template.png)
 
 2. **Run the processing scripts**
 
