@@ -16,10 +16,13 @@ taxon name, taxon short code, and folder path.
 - collect_img_info: Lists all image files in the taxa directory, along with the taxon name, taxon short code,
 and folder path.
 - has_images: Verifies whether a folder contains an image file.
+- create_image_thumbnail: Creates a thumbnail of specified dimensions from a single image.
 """
 
 import re
 from pathlib import Path
+import PIL
+from PIL import Image, UnidentifiedImageError
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png"}
 
@@ -145,6 +148,41 @@ def has_images(taxa_folder: Path) -> bool:
         if next(taxa_folder.rglob(f"*{ext}"), None) is not None:
             return True
     return False
+
+
+# --- Function 5 ---
+def create_image_thumbnail(input_path: Path, output_path: Path, minimum_size: int, output_size: tuple):
+    """
+    Processes a single image, resizing it as a thumbnail if its dimensions
+    are not below a specified minimum size. The original image is not altered.
+
+    Args:
+        input_path: The source path for the image to be processed.
+        output_path: The desired save path for the thumbnail.
+        minimum_size: The minimum dimension (width or height) an image must have to be considered for resizing.
+        Images with both dimensions smaller than this value will not be resized. This argument prevents images from
+        being scaled larger than its original dimensions.
+        output_size: A tuple (width, height) specifying the maximum dimensions for the thumbnail. The image will be
+        resized while maintaining its aspect ratio, such that the largest dimension is no greater than the
+        corresponding dimension in output_size.
+
+    Returns:
+        None: The function performs file operations and prints messages if errors are encountered, but does not return
+        any value.
+    """
+    try:
+        with Image.open(input_path) as img:
+            if (img.width < minimum_size) and (img.height < minimum_size):
+                print(f"{input_path} was not resized: Dimensions smaller than {minimum_size}.")
+            else:
+                img.thumbnail(output_size)
+                img.save(output_path)
+    except FileNotFoundError:
+        print(f"Error: Source file not found at {input_path}")
+    except PIL.UnidentifiedImageError:
+        print(f"Error: File {input_path} is not a valid image file")
+    except Exception as e:
+        print(f"An error occurred while processing {input_path}: {e}")
 
 
 # --- Example Usage ---
