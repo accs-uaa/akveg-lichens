@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # utils.py
 # Author: Amanda Droghini
-# Last Updated: 2025-07-28
+# Last Updated: 2025-07-29
 # ---------------------------------------------------------------------------
 
 """
@@ -10,13 +10,16 @@ This module provides a collection of utility functions to support the processing
 and images within the project.
 
 Functions included:
-- generate_short_code: Create a concise code from a subfolder (taxon) name.
-- collect_docx_info: Lists all Word documents (excluding hidden temp files) in the taxa directory, along with the
+1. generate_short_code: Create a concise code from a subfolder (taxon) name.
+2. enforce_abbr_period: Ensures that subspecies (ssp.) and species (spp.) abbreviations end with a period.
+3. generate_taxon_name: Extracts a consistently formatted name from a path-like object whose final path component
+represents a taxonomic entity.
+4. collect_docx_info: Lists all Word documents (excluding hidden temp files) in the taxa directory, along with the
 taxon name, taxon short code, and folder path.
-- collect_img_info: Lists all image files in the taxa directory, along with the taxon name, taxon short code,
+5. collect_img_info: Lists all image files in the taxa directory, along with the taxon name, taxon short code,
 and folder path.
-- has_images: Verifies whether a folder contains an image file.
-- create_image_thumbnail: Creates a thumbnail of specified dimensions from a single image.
+6. has_images: Verifies whether a folder contains an image file.
+7. create_image_thumbnail: Creates a thumbnail of specified dimensions from a single image.
 """
 
 import re
@@ -25,6 +28,8 @@ import PIL
 from PIL import Image, UnidentifiedImageError
 
 IMAGE_EXT = {".jpg", ".jpeg", ".png"}
+ABBR_PATTERN = r"(ssp|spp)(?!\.)(\s*)(.*)"
+ABBR_REPLACEMENT = r"\1.\2\3"
 
 # --- Function 1 ---
 def generate_short_code(taxon_name: str) -> str:
@@ -41,7 +46,7 @@ def generate_short_code(taxon_name: str) -> str:
     processed_name = (re.sub(r"&|\.|-|_|(spp)|(ssp)", "", taxon_name)
                       .lower()) # Remove unwanted characters and
     # convert to lowercase
-    parts = processed_name.split()
+    parts = processed_name.split()  # Splits by whitespace, handles multiple whitespaces between words
 
     if not parts:
         return "Error"  # Handle empty string case
@@ -55,8 +60,54 @@ def generate_short_code(taxon_name: str) -> str:
             parts = [parts[0], parts[1]] + parts[3:] # Delete duplicate genus name
         return "_".join([part[:5] for part in parts])
 
-
 # --- Function 2 ---
+def enforce_abbr_period(taxon_name: str) -> str:
+    """
+    Enforces period after subspecies (ssp.) and species (spp.) abbreviations
+
+    Args:
+        taxon_name: Name of taxon to be processed.
+
+    Return:
+        A string with each instance of 'ssp' or 'spp' ending with a period
+    """
+    if taxon_name is None:
+        return None
+    return re.sub(ABBR_PATTERN, ABBR_REPLACEMENT, taxon_name)
+
+
+# --- Function 3 ---
+def generate_taxon_name(subfolder_path) -> str:
+    """
+    Extracts taxon name from a path-like object, removing trailing/leading underscores and whitespaces and calling
+    enforce_abbr_period to enforce periods after 'ssp' and 'spp' abbreviations.
+
+    Args:
+        subfolder_path: The Path object for the directory that is named a taxon.
+
+    Return:
+        A processed string.
+    """
+    if subfolder_path is None:
+        print("Warning: Input is None. Returning None.")
+        return None
+
+    if not isinstance(subfolder_path, Path):
+        try:
+            subfolder_path = Path(subfolder_path)
+        except TypeError:  # Catch cases where input is not a string or Path (e.g., int, list)
+            print(f"Error: Input '{subfolder_path}' is not a Path object or a string. Returning None.")
+            return None
+        except Exception as e:  # Catch any other potential errors during Path conversion
+            print(f"Error: Could not convert '{subfolder_path}' to Path object. Details: {e}. Returning None.")
+            return None
+
+    taxon_name = str(subfolder_path.name).strip("_").strip()
+    taxon_name = enforce_abbr_period(taxon_name)
+    return taxon_name
+
+
+# --- Function 4 ---
 def collect_docx_info(taxa_folder: Path) -> list[dict]:
     """
     Collects information about DOCX files within a folder structure consisting of multiple subfolders (1 for each
@@ -81,7 +132,7 @@ def collect_docx_info(taxa_folder: Path) -> list[dict]:
         if not has_docx_files:
             continue
 
-        taxon_name = subfolder.name.strip("_").strip()
+        taxon_name = generate_taxon_name(subfolder)
         short_code = generate_short_code(taxon_name)
 
         for docx_file in subfolder.rglob('*.docx'):
@@ -95,7 +146,7 @@ def collect_docx_info(taxa_folder: Path) -> list[dict]:
     return docx_list
 
 
-# --- Function 3 ---
+# --- Function 5 ---
 def collect_img_info(taxa_folder: Path) -> list[dict]:
     """
     Collects information about image files within a folder structure consisting of multiple subfolders (1 for each
@@ -117,7 +168,7 @@ def collect_img_info(taxa_folder: Path) -> list[dict]:
         if not has_images(subfolder):
             continue
 
-        taxon_name = subfolder.name.strip()
+        taxon_name = generate_taxon_name(subfolder)
         short_code = generate_short_code(taxon_name)
 
         for image_path in subfolder.rglob("*"):  # Use rglob for recursive search: Include sub-directories
@@ -133,7 +184,7 @@ def collect_img_info(taxa_folder: Path) -> list[dict]:
     return img_list
 
 
-# --- Function 4 ---
+# --- Function 6 ---
 def has_images(taxa_folder: Path) -> bool:
     """
     Checks whether a folder contains 1+ image files.
@@ -150,7 +201,7 @@ def has_images(taxa_folder: Path) -> bool:
     return False
 
 
-# --- Function 5 ---
+# --- Function 7 ---
 def create_image_thumbnail(input_path: Path, output_path: Path, minimum_size: int, output_size: tuple):
     """
     Processes a single image, resizing it as a thumbnail if its dimensions
@@ -194,9 +245,11 @@ if __name__ == "__main__":
     code1 = generate_short_code(name1)
     print(f"Short code for '{name1}': {code1}")
 
-    name2 = "_Alectoria sarmentosa ssp. vexillifera"  # Taxon with subspecies ('ssp.') designation
+    name2 = "_Alectoria sarmentosa ssp vexillifera"  # Taxon with subspecies ('ssp') designation, missing a period
+    new_name2 = enforce_abbr_period(name2)
     code2 = generate_short_code(name2)
     print(f"Short code for '{name2}': {code2}")
+    print(f"New taxon name for '{name2}': {new_name2}")
 
     name3 = "_Calicium tigillare & Calicium pinicola"  # Two taxa with the same genus
     code3 = generate_short_code(name3)
@@ -206,3 +259,14 @@ if __name__ == "__main__":
     code4 = generate_short_code(name4)
     print(f"Short code for '{name4}': {code4}")
 
+    name5 = "Stereocaulon spp"  # No period after 'spp'
+    new_name5 = enforce_abbr_period(name5)
+    code5 = generate_short_code(name5)
+    print(f"Short code for '{name5}': {code5}")
+    print(f"New taxon name for '{name5}': {new_name5}")
+
+    name6 = "Alectoria sarmentosa ssp. sarmentosa"  # Subspecies with period after abbreviation
+    new_name6 = enforce_abbr_period(name6)
+    code6 = generate_short_code(name6)
+    print(f"Short code for '{name6}': {code6}")
+    print(f"New taxon name for '{name6}': {new_name6}")
