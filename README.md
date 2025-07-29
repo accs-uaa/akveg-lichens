@@ -20,6 +20,7 @@ integrate seamlessly into a Hugo website, enabling rapid deployment of and updat
 
 * **Python 3.13+** 
 * **Miniforge** (with conda and conda-forge channel) - For package management.
+* **[fastexcel](https://pypi.org/project/fastexcel/)** - For working with .xlsx files.
 * **[Polars](https://pola.rs/)** - For data manipulation. 
 * **[Pillow](https://pillow.readthedocs.io/en/stable/index.html)** - For image manipulation.
 * **[python-docx](https://python-docx.readthedocs.io/)** - For working with .docx files. 
