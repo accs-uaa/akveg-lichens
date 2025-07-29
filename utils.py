@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # utils.py
 # Author: Amanda Droghini
-# Last Updated: 2025-07-25
+# Last Updated: 2025-07-28
 # ---------------------------------------------------------------------------
 
 """
@@ -81,7 +81,7 @@ def collect_docx_info(taxa_folder: Path) -> list[dict]:
         if not has_docx_files:
             continue
 
-        taxon_name = subfolder.name.strip()
+        taxon_name = subfolder.name.strip("_").strip()
         short_code = generate_short_code(taxon_name)
 
         for docx_file in subfolder.rglob('*.docx'):
