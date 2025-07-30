@@ -2,11 +2,12 @@
 # ---------------------------------------------------------------------------
 # Resize and Copy Images
 # Author: Amanda Droghini
-# Last Updated: 2025-07-28
+# Last Updated: 2025-07-29
 # Usage: Execute in Python 3.13+.
 # Description: "Resize and Copy Images" identifies subfolders that contain images, creates short codes to use as file
 # names, resizes images not to exceed 1800px on the largest axis, and copies the resized images to the /static folder
-# of the akveg-lichens Hugo website.
+# of the akveg-lichens Hugo website. The script also exports a CSV file with the taxon name and export paths of each
+# thumbnail for use in subsequent scripts.
 # ---------------------------------------------------------------------------
 
 # Import required libraries
@@ -24,8 +25,12 @@ project_folder = drive / root_folder / 'Projects' / 'Lichen_Guide'
 taxa_folder = project_folder / 'Guide Master Folder_V_7_16_25' / 'Taxa Folders'
 website_folder = drive / root_folder / 'Servers_Websites' / 'akveg-lichens'
 
-# Define output folder
-output_folder = website_folder / 'static' / 'images' / 'taxa'
+# Define output folders
+thumbnail_folder = website_folder / 'static' / 'images' / 'taxa'
+csv_folder = project_folder / 'outputs'
+
+# Define output file
+output_csv = csv_folder / 'thumbnail_files.csv'
 
 # Define minimum and output image dimensions
 MINIMUM_SIZE = 1800
@@ -68,7 +73,7 @@ img_files = img_files.with_columns(
 # Define output path
 img_files = img_files.with_columns(
     pl.concat_str(
-            str(output_folder) + pl.lit("\\\\") + pl.col("output_name"))
+            str(thumbnail_folder) + pl.lit("\\\\") + pl.col("output_name"))
     .alias("output_path"))
 
 # Resize and copy images
@@ -80,3 +85,6 @@ for row in img_files.iter_rows(named=True):
     # Call the function for each image pair
     create_image_thumbnail(input_path, output_path, MINIMUM_SIZE, OUTPUT_SIZE)
 print("Image processing loop finished.")
+
+# Export as CSV
+img_files.write_csv(output_csv)
