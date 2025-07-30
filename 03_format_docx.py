@@ -27,42 +27,35 @@ taxa_folder = project_folder / 'Guide Master Folder_V_7_16_25' / 'Taxa Folders'
 website_folder = drive / root_folder / 'Servers_Websites' / 'akveg-lichens'
 
 # Define output folder
-output_folder = website_folder / 'content' / 'taxa'
+output_folder = website_folder / 'content' / 'pages' / 'taxa'
 
 # Define input files
 hierarchy_input = project_folder / 'outputs' / 'taxon_hierarchy.csv'
+thumbnail_input = project_folder / 'outputs' / 'thumbnail_files.csv'
 
-# Read in input file
+# Ingest input files
 hierarchy = pl.read_csv(hierarchy_input)
+thumbnails = pl.read_csv(thumbnail_input, columns = ['taxon_name', 'short_code',
+                                                     'sequence_number', 'output_name', 'thumbnail_path'],
+                         schema_overrides={'sequence_number':pl.Int64})
 
 # Identify all .docx files in subdirectories of taxa_folder
 docx_list = collect_docx_info(taxa_folder)
-
-# Convert to polars df
 docx_files = pl.DataFrame(docx_list)
 
 # Obtain name of output folder based on taxon organization
+docx_hierarchy = docx_files.join(hierarchy, left_on='taxon_name', right_on='original_folder', how='left')
 
-## Remove periods to match formatting in hierarchy CSV -- PROBABLY NO LONGER NEEDED
-docx_files = docx_files.with_columns(
-    pl.col("taxon_name").
-    str.replace_all("\\.", value="")
-    .alias("join_name")
-)
-
-## Join dataframes on taxon_name
-docx_hierarchy = docx_files.join(hierarchy, left_on='join_name', right_on='original_folder', how='left')
-
-## Replace non-matches (null values) with group name
+## Fill in non-matches (null values)
 docx_hierarchy = docx_hierarchy.with_columns(
-    pl.when((pl.col("taxon_folder").is_null()) & pl.col('join_name').str.contains("Cladonia"))
+    pl.when((pl.col("taxon_folder").is_null()) & pl.col('taxon_name').str.contains("Cladonia"))
     .then(pl.lit("cladoniaceae"))
-    .when((pl.col("taxon_folder").is_null()) & pl.col('join_name').str.contains("Thamnolia|Siphula|Lepra"))
+    .when((pl.col("taxon_folder").is_null()) & pl.col('taxon_name').str.contains("Thamnolia|Siphula|Lepra"))
     .then(pl.lit("icmadophilaceae"))
-    .when((pl.col("taxon_folder").is_null()) & pl.col('join_name').str.contains("Dactylina|Allocetraria"))
+    .when((pl.col("taxon_folder").is_null()) & pl.col('taxon_name').str.contains("Dactylina|Allocetraria"))
     .then(pl.lit("non_shrub_hair"))
     .when(pl.col("taxon_folder").is_null())
-    .then(pl.col("join_name"))
+    .then(pl.col("taxon_name"))
     .otherwise(pl.col("taxon_folder"))
     .alias("taxon_folder")
 )
@@ -97,12 +90,16 @@ docx_hierarchy = (docx_hierarchy.with_columns(
 # Process taxonomic description into Markdown file
 
 # Generate temp to test
-temp = docx_hierarchy[0:3]
+temp = docx_hierarchy[1:3]
 
 for row in temp.iter_rows(named=True):
     docx_path = row['input_docx']  # Keep as string
     md_path = Path(row['output_path'])
     taxon_name = row['taxon_name']
+    first_img = thumbnails.filter((pl.col('taxon_name') == taxon_name) & pl.col('sequence_number') == 1)[
+        'output_name'].item(
+    )
+    first_img_path = f"/images/taxa/{first_img}"
 
     # Open Word document
     document = Document(docx_path)
@@ -112,7 +109,8 @@ for row in temp.iter_rows(named=True):
 
         # Write front matter
         front_matter = textwrap.dedent(f"""\
-        title: "{taxon}"
+        ---
+        title: "{taxon_name}"
         type: docs
         ---
 
@@ -123,10 +121,15 @@ for row in temp.iter_rows(named=True):
 
         # Write Heading 1
 
-        md_file.write("# " + taxon + "\n\n")
+        md_file.write("# " + taxon_name + "\n\n")
 
-        ###### Insert first image - NEED TO CODE
-        md_file.write("![" + taxon + "](/images/file_name.jpg)")
+        # Insert first image
+        first_img_txt = textwrap.dedent(f"""\
+        ![{taxon_name}]({first_img_path})
+        
+        """)
+
+        md_file.write(first_img_txt)
 
         # Format subsequent headings + paragraph text
 
@@ -134,16 +137,17 @@ for row in temp.iter_rows(named=True):
             split_para = re.split(pattern=r':\s(.*)', string=para.text, maxsplit=2)
             if len(split_para) > 1:
                 para_heading = split_para[0].strip()
-                para_text = split_para[1].strip()
-                # Format heading
-                formatted_heading = "## " + para_heading
-                # Concatenate heading and paragraph text
-                formatted_line = formatted_heading + "\n" + para_text + "\n\n"
-                md_file.write(formatted_line)
+                if para_heading != "Name":
+                    para_text = split_para[1].strip()
+                    # Format heading
+                    formatted_heading = "## " + para_heading
+                    # Concatenate heading and paragraph text
+                    formatted_line = formatted_heading + "\n" + para_text + "\n\n"
+                    md_file.write(formatted_line)
             elif len(para.text) < 15:
                 print(f"Skipping writing string", para.text)
             else:
-                formatted_line = para.text + "\n\n"
+                formatted_line = para.text + "\n"
                 md_file.write(formatted_line)
 
         ##### Insert subsequent images (or all images?) under heading "Photos?"
