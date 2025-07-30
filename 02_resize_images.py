@@ -74,13 +74,13 @@ img_files = img_files.with_columns(
 img_files = img_files.with_columns(
     pl.concat_str(
             str(thumbnail_folder) + pl.lit("\\\\") + pl.col("output_name"))
-    .alias("output_path"))
+    .alias("thumbnail_path"))
 
 # Resize and copy images
 print("Starting image processing loop...")
 for row in img_files.iter_rows(named=True):
     input_path = row["input_path"]
-    output_path = row["output_path"]
+    output_path = row["thumbnail_path"]
 
     # Call the function for each image pair
     create_image_thumbnail(input_path, output_path, MINIMUM_SIZE, OUTPUT_SIZE)
