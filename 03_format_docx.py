@@ -2,7 +2,7 @@
 # ---------------------------------------------------------------------------
 # Format Taxa Descriptions
 # Author: Amanda Droghini
-# Last Updated: 2025-07-29
+# Last Updated: 2025-07-30
 # Usage: Execute in Python 3.13+.
 # Description: "Format Taxa Descriptions" reads in Word documents, separates section headings from text, re-formats
 # the document using Markdown, and adds Hugo front matter. The output is a Markdown file that can be converted to a
@@ -90,64 +90,85 @@ docx_hierarchy = (docx_hierarchy.with_columns(
 # Process taxonomic description into Markdown file
 
 # Generate temp to test
-temp = docx_hierarchy[1:3]
+temp = docx_hierarchy.filter(pl.col('taxon_name').str.contains("Cladonia"))[0:10,:]
 
 for row in temp.iter_rows(named=True):
     docx_path = row['input_docx']  # Keep as string
     md_path = Path(row['output_path'])
     taxon_name = row['taxon_name']
-    first_img = thumbnails.filter((pl.col('taxon_name') == taxon_name) & pl.col('sequence_number') == 1)[
-        'output_name'].item(
-    )
-    first_img_path = f"/images/taxa/{first_img}"
+
+    print(f"Formatting Markdown for {taxon_name}")
+
+    # List image file names associated with taxon
+    taxon_images = thumbnails.filter(
+        pl.col('taxon_name') == taxon_name)['output_name'].to_list()
 
     # Open Word document
     document = Document(docx_path)
 
-    with (open(md_path, 'w', encoding='utf-8') as md_file):
-        print(f"Writing Markdown to {md_path}...")
+    # Create blank list to store formatted outputs
+    markdown_parts = []
 
-        # Write front matter
-        front_matter = textwrap.dedent(f"""\
+    # Write front matter
+    front_matter = textwrap.dedent(f"""\
         ---
         title: "{taxon_name}"
         type: docs
         ---
-
-
         """)
 
-        md_file.write(front_matter)
+    markdown_parts.append(front_matter)
 
-        # Write Heading 1
+    # Write Heading 1
+    first_heading = f"# {taxon_name}"
 
-        md_file.write("# " + taxon_name + "\n\n")
+    markdown_parts.append(first_heading)
 
-        # Insert first image
-        first_img_txt = textwrap.dedent(f"""\
-        ![{taxon_name}]({first_img_path})
-        
-        """)
+    # Insert first image (if present)
+    if len(taxon_images) > 0:
+        first_img = taxon_images[0]
+        first_img_path = f"/images/taxa/{first_img}"
+        first_img_txt = f"![{taxon_name}]({first_img_path})"
+        markdown_parts.append(first_img_txt)
 
-        md_file.write(first_img_txt)
+    # Format subsequent headings + paragraph text
+    for para in document.paragraphs:
+        split_para = re.split(pattern=r':\s(.*)', string=para.text, maxsplit=2)
 
-        # Format subsequent headings + paragraph text
+        if len(split_para) > 1:
+            para_heading = split_para[0].strip()
+            para_text = split_para[1].strip()
+            if para_heading != "Name" and para_text:
+                # Format heading
+                formatted_heading = f"## {para_heading}"
+                # Concatenate heading and paragraph text
+                formatted_line = formatted_heading + "\n" + para_text
+                formatted_line = formatted_line.rstrip('\n')
+                markdown_parts.append(formatted_line)
 
-        for para in document.paragraphs:
-            split_para = re.split(pattern=r':\s(.*)', string=para.text, maxsplit=2)
-            if len(split_para) > 1:
-                para_heading = split_para[0].strip()
-                if para_heading != "Name":
-                    para_text = split_para[1].strip()
-                    # Format heading
-                    formatted_heading = "## " + para_heading
-                    # Concatenate heading and paragraph text
-                    formatted_line = formatted_heading + "\n" + para_text + "\n\n"
-                    md_file.write(formatted_line)
-            elif len(para.text) < 15:
-                print(f"Skipping writing string", para.text)
-            else:
-                formatted_line = para.text + "\n"
-                md_file.write(formatted_line)
+        elif len(para.text) < 15:  # Consider only excluding empty strings
+            print(f"Skipping writing string: ", para.text)
 
-        ##### Insert subsequent images (or all images?) under heading "Photos?"
+        else:
+            formatted_line = para.text.rstrip('\n')
+            markdown_parts.append(formatted_line)
+
+    # Append other images (if present)
+    if len(taxon_images) > 1:
+        photo_heading = "## Photos"
+        markdown_parts.append(photo_heading)
+
+        for img_file in taxon_images[1:]:
+            img_path = f"/images/taxa/{img_file}"
+            img_txt = f"![{taxon_name}]({img_path})"
+            markdown_parts.append(img_txt)
+
+    # Combine Markdown parts, separating each with two newlines
+    compiled_markdown = "\n\n".join(markdown_parts)
+
+    # Remove all newlines at the end of the document and replace with a single one
+    final_markdown = compiled_markdown.rstrip('\n') + '\n'
+
+    # Write to disk
+    with (open(md_path, 'w', encoding='utf-8') as md_file):
+        md_file.write(final_markdown)
